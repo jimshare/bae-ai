@@ -31,7 +31,7 @@ def load_context() -> str:
         print(f"Error loading context.txt: {str(e)}")
         return ""
 
-def generate_prompt(message: str, context: str) -> str:
+def generate_prompt(message: str) -> str:
     """
     Generate a prompt that includes context and the user's message.
     
@@ -42,20 +42,13 @@ def generate_prompt(message: str, context: str) -> str:
     Returns:
         Formatted prompt string
     """
-    if not context:
-        return message
-        
     return f"""Please answer the following question using the context provided below.
 The question may or may not be in English. If the question is not in English, write your response in the language of the question.
-It's very important that you keep your response concise and suitable for SMS with no more than 100 words.
-
-Context:
-{context}
 
 Question:
 {message}
 
-Answer the question specifically referencing relevant information from the context. 
+Answer the question specifically referencing relevant information from the context, which is rules and information on the CalFresh program. 
 It's very important that you keep your response concise and suitable for SMS with no more than 100 words.
 If the question cannot be answered using the context, inform the user that you don't have the information to answer their question."""
 
@@ -97,18 +90,28 @@ async def process_message_and_respond(from_number: str, to_number: str, message_
     try:
         # Get context and generate prompt
         context = load_context()
-        prompt = generate_prompt(message_body, context)
+        prompt = generate_prompt(message_body)
         
         # Get completion from Claude with timeout
         start_time = time.time()
-        message = claude.messages.create(
+        message = claude.beta.prompt_caching.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=1024,
             messages=[{
                 "role": "user",
                 "content": prompt
             }],
-            system="You are an SMS chatbot. It is very important that you keep responses concise and under 640 characters to fit in SMS messages."
+            system=[
+                {
+                    "type": "text",
+                    "text": "You are an SMS chatbot. It is very important that you keep responses concise and under 640 characters to fit in SMS messages."
+                },
+                {
+                    "type": "text",
+                    "text": context,
+                    "cache_control": {"type": "ephemeral"}
+                }
+            ]
         )
         
         # Extract response
