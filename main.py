@@ -87,6 +87,55 @@ async def verify_twilio_request(request: Request) -> bool:
         signature
     )
 
+async def process_message_and_respond(from_number: str, to_number: str, message_body: str):
+    """
+    Process message with Anthropic and send response via Twilio
+    """
+    try:
+        # Get context and generate prompt
+        context = load_context()
+        prompt = generate_prompt(message_body, context)
+        
+        # Get completion from Claude with timeout
+        start_time = time.time()
+        message = anthropic.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1024,
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            system="You are an SMS chatbot. Keep responses concise and under 480 characters to fit in three SMS messages."
+        )
+        
+        # Extract response
+        response = message.content[0].text
+        
+        # Log processing time
+        processing_time = time.time() - start_time
+        print(f"Claude processing time: {processing_time:.2f} seconds")
+        
+        # Send SMS response via Twilio
+        twilio_client.messages.create(
+            body=response,
+            from_=to_number,
+            to=from_number
+        )
+        
+    except Exception as e:
+        print(f"Error in background task: {str(e)}")
+        # Send error message to user
+        try:
+            error_message = "Sorry, I'm having trouble processing your message. Please try again in a moment."
+            twilio_client.messages.create(
+                body=error_message,
+                from_=to_number,
+                to=from_number
+            )
+        except Exception as send_error:
+            print(f"Error sending error message: {str(send_error)}")
+
+
 @app.post("/sms", response_class=PlainTextResponse)
 async def handle_sms(
     request: Request,
@@ -105,31 +154,14 @@ async def handle_sms(
         return PlainTextResponse("Invalid request", status_code=403)
     
     try:
-        # Load context from file
-        context = load_context()
-        
-        # Generate prompt with context
-        prompt = generate_prompt(Body, context)
-
-        # Get completion from Claude
-        message = claude.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=1024,
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }],
-            system="You are an SMS chatbot. Keep responses concise and under 320 characters to fit in two SMS messages."
+        # Queue the message processing in background
+        background_tasks.add_task(
+            process_message_and_respond,
+            from_number=From,
+            to_number=To,
+            message_body=Body
         )
         
-        # Extract response
-        response = message.content[0].text
-        
-        return PlainTextResponse(response)
-        
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return PlainTextResponse(
-            "Sorry, there was an error processing your message.",
-            status_code=500
-        )
+        # Return immediate acknowledgment
+        # Using empty response to avoid Twilio sending any immediate message
+        return PlainTextResponse("")
