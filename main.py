@@ -1,11 +1,13 @@
 import os
 from pathlib import Path
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, Request, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from twilio.rest import Client
 from twilio.request_validator import RequestValidator
 from anthropic import Anthropic
 from dotenv import load_dotenv
+import asyncio
+import time
 
 # Load environment variables
 load_dotenv()
@@ -45,7 +47,7 @@ def generate_prompt(message: str, context: str) -> str:
         
     return f"""Please answer the following question using the context provided below.
 The question may or may not be in English. If the question is not in English, write your response in the language of the question.
-Keep your response concise and suitable for SMS (under 320 characters).
+It's very important that you keep your response concise and suitable for SMS with no more than 100 words.
 
 Context:
 {context}
@@ -54,6 +56,7 @@ Question:
 {message}
 
 Answer the question specifically referencing relevant information from the context. 
+It's very important that you keep your response concise and suitable for SMS with no more than 100 words.
 If the question cannot be answered using the context, inform the user that you don't have the information to answer their question."""
 
 
@@ -98,14 +101,14 @@ async def process_message_and_respond(from_number: str, to_number: str, message_
         
         # Get completion from Claude with timeout
         start_time = time.time()
-        message = anthropic.messages.create(
+        message = claude.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=1024,
             messages=[{
                 "role": "user",
                 "content": prompt
             }],
-            system="You are an SMS chatbot. Keep responses concise and under 480 characters to fit in three SMS messages."
+            system="You are an SMS chatbot. It is very important that you keep responses concise and under 640 characters to fit in SMS messages."
         )
         
         # Extract response
@@ -138,6 +141,7 @@ async def process_message_and_respond(from_number: str, to_number: str, message_
 
 @app.post("/sms", response_class=PlainTextResponse)
 async def handle_sms(
+    background_tasks: BackgroundTasks,
     request: Request,
     From: str = Form(...),
     To: str = Form(...),
@@ -153,15 +157,15 @@ async def handle_sms(
     if not await verify_twilio_request(request):
         return PlainTextResponse("Invalid request", status_code=403)
     
-    try:
-        # Queue the message processing in background
-        background_tasks.add_task(
-            process_message_and_respond,
-            from_number=From,
-            to_number=To,
-            message_body=Body
-        )
-        
-        # Return immediate acknowledgment
-        # Using empty response to avoid Twilio sending any immediate message
-        return PlainTextResponse("")
+    # Queue the message processing in background
+    background_tasks.add_task(
+        process_message_and_respond,
+        from_number=From,
+        to_number=To,
+        message_body=Body
+    )
+    
+    # Return immediate acknowledgment
+    # Using empty response to avoid Twilio sending any immediate message
+    return PlainTextResponse("")
+
