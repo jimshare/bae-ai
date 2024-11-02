@@ -1,0 +1,60 @@
+# Environment variables
+.env
+.env.*
+
+# Python virtual environment
+venv/
+env/
+ENV/
+.venv/
+.python-version
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+.project
+.classpath
+.settings/
+
+# Application specific
+context.txt
+logs/
+*.log
+.git/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Local development
+*.sqlite3
+*.db
+.ipynb_checkpoints/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Project specific (add your custom files)
+node_modules/

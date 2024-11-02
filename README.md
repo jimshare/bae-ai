@@ -1,8 +1,8 @@
-# SMS Chatbot with FastAPI, Twilio, and Anthropic
+# CalFresh Navigator with FastAPI, Twilio, and Anthropic
 
 This project implements an SMS chatbot using FastAPI that:
 1. Receives incoming SMS messages via Twilio webhooks
-2. Processes messages using Anthropic's Claude API
+2. Processes messages using Anthropic's Claude API, referencing rules and regulations on accessing CalFresh in California
 3. Sends responses back via SMS
 
 ## Setup
@@ -40,7 +40,6 @@ The application validates incoming webhooks using Twilio's request validation to
 - ANTHROPIC_API_KEY: API key for Anthropic
 - TWILIO_ACCOUNT_SID: Your Twilio account SID
 - TWILIO_AUTH_TOKEN: Your Twilio auth token
-- TWILIO_PHONE_NUMBER: The Twilio phone number sending messages
 
 ## Error Handling
 The application includes basic error handling for:
