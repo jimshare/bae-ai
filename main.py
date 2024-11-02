@@ -43,7 +43,8 @@ def generate_prompt(message: str, context: str) -> str:
     if not context:
         return message
         
-    return f"""Please answer the following question using the context provided below. 
+    return f"""Please answer the following question using the context provided below.
+The question may or may not be in English. If the question is not in English, write your response in the language of the question.
 Keep your response concise and suitable for SMS (under 320 characters).
 
 Context:
