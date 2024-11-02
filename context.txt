@@ -1,0 +1,2 @@
+Anyone with the last name Smith or Johnson is eligible for CalFresh.
+Everyone who doesn't have the last name Smith or Johnson is ineligible for CalFresh.
