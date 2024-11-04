@@ -50,6 +50,7 @@ Question:
 
 Answer the question specifically referencing relevant information from the context, which is rules and information on the CalFresh program. 
 It's very important that you keep your response concise and suitable for SMS with no more than 100 words.
+Only provide an answer to the question, with no additional text.
 If the question cannot be answered using the context, inform the user that you don't have the information to answer their question."""
 
 
@@ -95,7 +96,7 @@ async def process_message_and_respond(from_number: str, to_number: str, message_
         # Get completion from Claude with timeout
         start_time = time.time()
         message = claude.beta.prompt_caching.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-3-5-haiku-20241022",
             max_tokens=1024,
             messages=[{
                 "role": "user",
@@ -141,6 +142,17 @@ async def process_message_and_respond(from_number: str, to_number: str, message_
         except Exception as send_error:
             print(f"Error sending error message: {str(send_error)}")
 
+
+# process_message_and_respond(
+#     from_number="+17076846107",
+#     to_number="+15868003825",
+#     # message_body="Do I need to mention that I have a boyfriend that lives part time with me when applying for CalFresh?"
+#     # message_body="Can I get CalFresh if i live outside CA for a few months each year?"
+#     # message_body="Can I use my food stamps to buy toilet paper?"
+#     # message_body="I am a single mom of two kids, how much CalFresh am I eligible for?"
+#     # message_body="Who is eligible for CalFresh?"
+#     message_body="Dónde puedo recibir CalFresh?"
+# )
 
 @app.post("/sms", response_class=PlainTextResponse)
 async def handle_sms(
